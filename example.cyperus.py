@@ -43,27 +43,37 @@ class OscServer(ServerThread):
         print('path', path)
         print('args', args)
         responses.put(args)
-
+        
     @make_method('/cyperus/add/module/audio/oscillator/pulse', 'sffff')
-    def osc_add_module_pulse(self, path, args):
+    def osc_add_module_sine(self, path, args):
         print("received '/cyperus/add/module/audio/oscillator/pulse'")
         responses.put(args)
 
     @make_method('/cyperus/edit/module/audio/oscillator/pulse', 'sffff')
-    def osc_edit_module_pulse(self, path, args):
+    def osc_edit_module_sine(self, path, args):
         print("received '/cyperus/edit/module/audio/oscillator/pulse'")
         responses.put(args)
-        
+
     @make_method('/cyperus/add/module/movement/envelope/adsr', 'siffffffff')
-    def osc_add_module_sine(self, path, args):
+    def osc_add_module_adsr(self, path, args):
         print("received '/cyperus/add/module/movement/envelope/adsr'")
         responses.put(args)
 
     @make_method('/cyperus/edit/module/movement/envelope/adsr', 'siffffffff')
-    def osc_edit_module_sine(self, path, args):
+    def osc_edit_module_adsr(self, path, args):
         print("received '/cyperus/edit/module/movement/envelope/adsr'")
         responses.put(args)
 
+    @make_method('/cyperus/add/module/audio/filter/moogff', 'sfffff')
+    def osc_add_module_moogff(self, path, args):
+        print("received '/cyperus/add/module/audio/filter/moogff'")
+        responses.put(args)
+
+    @make_method('/cyperus/edit/module/audio/filter/moogff', 'sfffff')
+    def osc_edit_module_moogff(self, path, args):
+        print("received '/cyperus/edit/module/audio/filter/moogff'")
+        responses.put(args)
+        
     @make_method('/cyperus/list/module_port', 'ss')
     def osc_list_module_port(self, path, args):
         print("received '/cyperus/list/module_port'")
@@ -80,8 +90,14 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     bus_main0_uuid = None
     bus_ports  = {'in': [],
                   'out': []}
+    sine_module_uuid = None
+    sine_module_ports = {'in': [],
+                          'out': []}
     adsr_module_uuid = None
     adsr_module_ports = {'in': [],
+                          'out': []}
+    filter_module_uuid = None
+    filter_module_ports = {'in': [],
                           'out': []}
     
     liblo.send(dest, "/cyperus/list/main")
@@ -128,6 +144,35 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
 
     print(bus_main0_uuid)
 
+
+
+
+    
+    liblo.send(dest, "/cyperus/add/module/audio/oscillator/pulse", "/{}".format(bus_main0_uuid), 440.0, 0.5, 1.0, 0.0)
+    response = responses.get()
+    sine_module_uuid = response[0]    
+    
+    liblo.send(dest, "/cyperus/list/module_port", "/{}?{}".format(bus_main0_uuid,
+                                                                  sine_module_uuid))
+    response = responses.get()
+    print('bloc_processor response: {}'.format(response))
+    raw_sine_module_ports = response[1].split('\n')
+    print(raw_sine_module_ports)
+    outs = False
+    for elem in filter(None, raw_sine_module_ports):
+        if 'out:' in elem:
+            outs = True
+        elif 'in:' in elem:
+            pass
+        elif outs:
+            sine_module_ports['out'].append(elem)
+        else:
+            sine_module_ports['in'].append(elem)
+    print('sine_module_ports', sine_module_ports)
+
+
+    
+    
     liblo.send(dest, "/cyperus/add/module/movement/envelope/adsr",
                "/{}".format(bus_main0_uuid),
                0, # gate
@@ -136,7 +181,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                0.9, # release_rate (seconds)
                1.0, # sustain_level
                0.5, # target_ratio_a, attack ratio - less is exponential and more is linear
-               0.5, # target_ratio_dr, decay-release ratio - like above
+               0.0001, # target_ratio_dr, decay-release ratio - like above
                1.0, # mul
                0.0) # add
     response = responses.get()
@@ -161,22 +206,36 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     print('adsr_module_ports', adsr_module_ports)
 
 
-    liblo.send(dest,
-               "/cyperus/add/connection",
-               mains['in'][0],
-               "/{}:{}".format(bus_main0_uuid,
-                               bus_ports['in'][0].split('|')[0]))
-    response = responses.get()
 
-
-    liblo.send(dest,
-               "/cyperus/add/connection",
-               "/{}:{}".format(bus_main0_uuid,
-                               bus_ports['in'][0].split('|')[0]),
-               "/{}?{}<{}".format(bus_main0_uuid,
-                                  adsr_module_uuid,
-                                  adsr_module_ports['in'][0].split('|')[0]))
+    liblo.send(dest, "/cyperus/add/module/audio/filter/moogff",
+               "/{}".format(bus_main0_uuid),
+               800.0,
+               1.0,
+               0.0,
+               1.0,
+               0.0) # add
     response = responses.get()
+    filter_module_uuid = response[0]    
+    
+    liblo.send(dest, "/cyperus/list/module_port", "/{}?{}".format(bus_main0_uuid,
+                                                                  filter_module_uuid))
+    response = responses.get()
+    print('bloc_processor response: {}'.format(response))
+    raw_filter_module_ports = response[1].split('\n')
+    print(raw_filter_module_ports)
+    outs = False
+    for elem in filter(None, raw_filter_module_ports):
+        if 'out:' in elem:
+            outs = True
+        elif 'in:' in elem:
+            pass
+        elif outs:
+            filter_module_ports['out'].append(elem)
+        else:
+            filter_module_ports['in'].append(elem)
+    print('filter_module_ports', filter_module_ports)
+    
+    
 
     
     liblo.send(dest,
@@ -184,10 +243,30 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                "/{}?{}>{}".format(bus_main0_uuid,
                                   adsr_module_uuid,
                                   adsr_module_ports['out'][0].split('|')[0]),
+               "/{}?{}<{}".format(bus_main0_uuid,
+                                  sine_module_uuid,
+                                  sine_module_ports['in'][2].split('|')[0]))
+    response = responses.get()    
+    
+    liblo.send(dest,
+               "/cyperus/add/connection",
+               "/{}?{}>{}".format(bus_main0_uuid,
+                                  sine_module_uuid,
+                                  sine_module_ports['out'][0].split('|')[0]),
+               "/{}?{}<{}".format(bus_main0_uuid,
+                                  filter_module_uuid,
+                                  filter_module_ports['in'][0].split('|')[0]))
+    response = responses.get()
+
+    liblo.send(dest,
+               "/cyperus/add/connection",
+               "/{}?{}>{}".format(bus_main0_uuid,
+                                  filter_module_uuid,
+                                  filter_module_ports['out'][0].split('|')[0]),
                "/{}:{}".format(bus_main0_uuid,
                                bus_ports['out'][0].split('|')[0]))
     response = responses.get()
-
+    
     liblo.send(dest,
                "/cyperus/add/connection",
                "/{}:{}".format(bus_main0_uuid,
@@ -195,33 +274,40 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                mains['out'][0])
 
     response = responses.get()
+
+    liblo.send(dest, "/cyperus/edit/module/movement/envelope/adsr",
+               "/{}?{}".format(bus_main0_uuid, adsr_module_uuid),
+               1, # gate
+               0.25, # attack_rate (seconds)
+               0.25, # decay_rate (seconds)
+               0.9, # release_rate (seconds)
+               1.0, # sustain_level
+               .1, # target_ratio_a, attack ratio - less is exponential and more is linear
+               .1, # target_ratio_dr, decay-release ratio - like above
+               1.0, # mul
+               0.0) # add
+    response = responses.get()
     
-    for num in range(0,1):
-        print("/cyperus/edit/module/movement/envelope/adsr",
-              "/{}?{}".format(bus_main0_uuid, adsr_module_uuid),
-              1, # gate
-              4.0, # attack_rate (seconds)
-              4.0, # decay_rate (seconds)
-              0.9, # release_rate (seconds)
-              1.0, # sustain_level
-              0.5, # target_ratio_a, attack ratio - less is exponential and more is linear
-              0.5, # target_ratio_dr, decay-release ratio - like above
-              1.0, # mul
-              0.0) # add
+    for num in range(440,880):
+        print("/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid), float(num), 0.5, 0.5, 0.0)
+        liblo.send(dest, "/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid),  float(num), 0.5, 0.5, 0.0)
+        response = responses.get()
+        
         liblo.send(dest, "/cyperus/edit/module/movement/envelope/adsr",
                    "/{}?{}".format(bus_main0_uuid, adsr_module_uuid),
-                   1,
-                   4.0,
-                   4.0,
-                   0.9,
-                   1.0,
-                   0.3,
-                   0.0001,
-                   1.0,
-                   0.0)
+                   1, # gate
+                   10.0, # attack_rate (seconds)
+                   10.0, # decay_rate (seconds)
+                   0.9, # release_rate (seconds)
+                   1.0, # sustain_level
+                   0.1, # target_ratio_a, attack ratio - less is exponential and more is linear
+                   0.1, # target_ratio_dr, decay-release ratio - like above
+                   1.0, # mul
+                   0.0) # add
         response = responses.get()
-        time.sleep(5.0)
+        time.sleep(1);
 
+        
 if __name__ == '__main__':
     #outgoing connection
     dest = liblo.Address(5001)
