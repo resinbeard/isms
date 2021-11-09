@@ -12,7 +12,7 @@ screen.redraw()
 key = function(x)
   screen.pixel(math.random(256),math.random(16)+50,0xFFFFFF);
   screen.redraw()
-  osc.send({"localhost",57120},"/n",{x%127})
+  osc.send({"127.0.0.1",57110},"/n",{x%127})
   print("key: "..x)
 end
 
@@ -26,7 +26,7 @@ metro.start(1,0.1,5,0);
 
 grid.key = function(x,y,z)
   print("grid",x,y,z)
-  osc.send({"localhost",57120},"/n",{(7-y)*5+x+30})
+  osc.send({"127.0.0.1",57110},"/n",{(7-y)*5+x+30})
   grid.led(x,y,15);
   grid.redraw();
 end

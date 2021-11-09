@@ -54,14 +54,14 @@ class OscServer(ServerThread):
         print("received '/cyperus/edit/module/audio/oscillator/pulse'")
         responses.put(args)
 
-    @make_method('/cyperus/add/module/movement/envelope/adsr', 'siffffffff')
-    def osc_add_module_adsr(self, path, args):
-        print("received '/cyperus/add/module/movement/envelope/adsr'")
+    @make_method('/cyperus/add/module/movement/envelope/stdshape', 'siffff')
+    def osc_add_module_envelope_stdshape_perc(self, path, args):
+        print("received '/cyperus/add/module/movement/envelope/stdshape'")
         responses.put(args)
 
-    @make_method('/cyperus/edit/module/movement/envelope/adsr', 'siffffffff')
-    def osc_edit_module_adsr(self, path, args):
-        print("received '/cyperus/edit/module/movement/envelope/adsr'")
+    @make_method('/cyperus/edit/module/movement/envelope/segment', 'siiiffff')
+    def osc_edit_module_envelope_stdshape_perc(self, path, args):
+        print("received '/cyperus/edit/module/movement/envelope/segment'")
         responses.put(args)
 
     @make_method('/cyperus/add/module/audio/filter/moogff', 'sfffff')
@@ -93,8 +93,8 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     sine_module_uuid = None
     sine_module_ports = {'in': [],
                           'out': []}
-    adsr_module_uuid = None
-    adsr_module_ports = {'in': [],
+    envelope_segment_perc_module_uuid = None
+    envelope_segment_perc_module_ports = {'in': [],
                           'out': []}
     filter_module_uuid = None
     filter_module_ports = {'in': [],
@@ -166,41 +166,34 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
             sine_module_ports['in'].append(elem)
     print('sine_module_ports', sine_module_ports)
     
-    
-    liblo.send(dest, "/cyperus/add/module/movement/envelope/adsr",
+    liblo.send(dest, "/cyperus/add/module/movement/envelope/stdshape",
                "/{}".format(bus_main0_uuid),
-               0, # gate
-               0.5, # attack_rate (seconds)
-               0.5, # decay_rate (seconds)
-               0.9, # release_rate (seconds)
-               1.0, # sustain_level
-               0.5, # target_ratio_a, attack ratio - less is exponential and more is linear
-               0.0001, # target_ratio_dr, decay-release ratio - like above
-               1.0, # mul
-               0.0) # add
+               3,     # stdshape (perc=3)
+               0.01,  # attack_time
+               0.9,   # release_time
+               0.5,   # level
+               -0.4)  # curve
     response = responses.get()
-    adsr_module_uuid = response[0]    
+    envelope_segment_perc_module_uuid = response[0]    
     
     liblo.send(dest, "/cyperus/list/module_port", "/{}?{}".format(bus_main0_uuid,
-                                                                  adsr_module_uuid))
+                                                                  envelope_segment_perc_module_uuid))
     response = responses.get()
     print('bloc_processor response: {}'.format(response))
-    raw_adsr_module_ports = response[1].split('\n')
-    print(raw_adsr_module_ports)
+    raw_envelope_segment_perc_module_ports = response[1].split('\n')
+    print(raw_envelope_segment_perc_module_ports)
     outs = False
-    for elem in filter(None, raw_adsr_module_ports):
+    for elem in filter(None, raw_envelope_segment_perc_module_ports):
         if 'out:' in elem:
             outs = True
         elif 'in:' in elem:
             pass
         elif outs:
-            adsr_module_ports['out'].append(elem)
+            envelope_segment_perc_module_ports['out'].append(elem)
         else:
-            adsr_module_ports['in'].append(elem)
-    print('adsr_module_ports', adsr_module_ports)
-
-
-
+            envelope_segment_perc_module_ports['in'].append(elem)
+    print('envelope_segment_perc_module_ports', envelope_segment_perc_module_ports)
+    
     liblo.send(dest, "/cyperus/add/module/audio/filter/moogff",
                "/{}".format(bus_main0_uuid),
                800.0,
@@ -213,6 +206,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     
     liblo.send(dest, "/cyperus/list/module_port", "/{}?{}".format(bus_main0_uuid,
                                                                   filter_module_uuid))
+
     response = responses.get()
     print('bloc_processor response: {}'.format(response))
     raw_filter_module_ports = response[1].split('\n')
@@ -230,13 +224,11 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     print('filter_module_ports', filter_module_ports)
     
     
-
-    
     liblo.send(dest,
                "/cyperus/add/connection",
                "/{}?{}>{}".format(bus_main0_uuid,
-                                  adsr_module_uuid,
-                                  adsr_module_ports['out'][0].split('|')[0]),
+                                  envelope_segment_perc_module_uuid,
+                                  envelope_segment_perc_module_ports['out'][0].split('|')[0]),
                "/{}?{}<{}".format(bus_main0_uuid,
                                   sine_module_uuid,
                                   sine_module_ports['in'][2].split('|')[0]))
@@ -269,18 +261,35 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
 
     response = responses.get()
 
-    liblo.send(dest, "/cyperus/edit/module/movement/envelope/adsr",
-               "/{}?{}".format(bus_main0_uuid, adsr_module_uuid),
-               1, # gate
-               0.25, # attack_rate (seconds)
-               0.25, # decay_rate (seconds)
-               0.9, # release_rate (seconds)
-               1.0, # sustain_level
-               .1, # target_ratio_a, attack ratio - less is exponential and more is linear
-               .1, # target_ratio_dr, decay-release ratio - like above
-               1.0, # mul
-               0.0) # add
+    print('sending first edit/module/movement/envelope/segment')
+    liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
+               "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
+               2,  # release_node
+               -1, # loop_node
+               0,  # offset
+               1.0,# gate
+               1.0,# level_scale
+               0.0,# level_bias
+               1.0)# time_scale
     response = responses.get()
+
+
+    print('sending first edit/module/movement/envelope/segment')
+    liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
+               "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
+               2,  # release_node
+               -1, # loop_node
+               0,  # offset
+               -1.0,# gate
+               1.0,# level_scale
+               0.0,# level_bias
+               1.0)# time_scale
+    response = responses.get()
+
+    
+    print(" done\n");
+    
+    exit(0)
     
     while True:
         num = 440
@@ -288,8 +297,8 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
         liblo.send(dest, "/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid),  float(num), 0.5, 0.5, 0.0)
         response = responses.get()
         
-        liblo.send(dest, "/cyperus/edit/module/movement/envelope/adsr",
-                   "/{}?{}".format(bus_main0_uuid, adsr_module_uuid),
+        liblo.send(dest, "/cyperus/edit/module/movement/envelope/stdshape",
+                   "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
                    1, # gate
                    0.25, # attack_rate (seconds)
                    0.25, # decay_rate (seconds)

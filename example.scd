@@ -4,7 +4,7 @@ SynthDef("PolyPerc", {
 			var filt = MoogFF.ar(snd,cutoff,gain);
 			var env = Env.perc(level: amp, releaseTime: release).kr(2);
 			Out.ar(out, Pan2.ar((filt*env), pan));
-		}).add;
+		}).play;
 
 o = OSCFunc({ arg msg, time, addr, recvPort;
 	Synth(\PolyPerc, [\freq, msg[1].midicps]);
