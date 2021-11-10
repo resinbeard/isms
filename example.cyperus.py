@@ -172,7 +172,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                0.01,  # attack_time
                0.9,   # release_time
                0.5,   # level
-               -0.4)  # curve
+               -4.0)  # curve
     response = responses.get()
     envelope_segment_perc_module_uuid = response[0]    
     
@@ -264,12 +264,12 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
 
     time.sleep(5)
 
-    num = 440
-    print("/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid), float(num), 0.5, 0.5, 0.0)
-    liblo.send(dest, "/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid),  float(num), 0.5, 0.5, 0.0)
-    response = responses.get()
 
-    while True:
+    for num in range(0, 800, 5):
+        print("/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid), float(num), 0.5, 0.5, 0.0)
+        liblo.send(dest, "/cyperus/edit/module/audio/oscillator/pulse", "/{}?{}".format(bus_main0_uuid, sine_module_uuid),  float(num), 0.5, 0.5, 0.0)
+        response = responses.get()
+
 
         print('sending first edit/module/movement/envelope/segment')
         liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
@@ -283,21 +283,21 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                    1.0)# time_scale
         response = responses.get()
 
-        time.sleep(0.5)
+        # time.sleep(0.5)
 
-        print('sending first edit/module/movement/envelope/segment')
-        liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
-                   "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
-                   -1,  # release_node
-                   -1, # loop_node
-                   0,  # offset
-                   -1.0,# gate
-                   1.0,# level_scale
-                   0.0,# level_bias
-                   1.0)# time_scale
-        response = responses.get()
+        # print('sending first edit/module/movement/envelope/segment')
+        # liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
+        #            "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
+        #            -1,  # release_node
+        #            -1, # loop_node
+        #            0,  # offset
+        #            -1.0,# gate
+        #            1.0,# level_scale
+        #            0.0,# level_bias
+        #            1.0)# time_scale
+        # response = responses.get()
 
-        time.sleep(1.0);
+        time.sleep(1.5);
 
         
 if __name__ == '__main__':
