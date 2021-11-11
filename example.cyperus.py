@@ -54,14 +54,14 @@ class OscServer(ServerThread):
         print("received '/cyperus/edit/module/audio/oscillator/pulse'")
         responses.put(args)
 
-    @make_method('/cyperus/add/module/movement/envelope/stdshape', 'siffff')
+    @make_method('/cyperus/add/module/motion/envelope/stdshape', 'siffff')
     def osc_add_module_envelope_stdshape_perc(self, path, args):
-        print("received '/cyperus/add/module/movement/envelope/stdshape'")
+        print("received '/cyperus/add/module/motion/envelope/stdshape'")
         responses.put(args)
 
-    @make_method('/cyperus/edit/module/movement/envelope/segment', 'siiiffff')
+    @make_method('/cyperus/edit/module/motion/envelope/segment', 'siiiffff')
     def osc_edit_module_envelope_stdshape_perc(self, path, args):
-        print("received '/cyperus/edit/module/movement/envelope/segment'")
+        print("received '/cyperus/edit/module/motion/envelope/segment'")
         responses.put(args)
 
     @make_method('/cyperus/add/module/audio/filter/moogff', 'sfffff')
@@ -166,7 +166,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
             sine_module_ports['in'].append(elem)
     print('sine_module_ports', sine_module_ports)
     
-    liblo.send(dest, "/cyperus/add/module/movement/envelope/stdshape",
+    liblo.send(dest, "/cyperus/add/module/motion/envelope/stdshape",
                "/{}".format(bus_main0_uuid),
                3,     # stdshape (perc=3)
                0.01,  # attack_time
@@ -271,8 +271,8 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
         response = responses.get()
 
 
-        print('sending first edit/module/movement/envelope/segment')
-        liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
+        print('sending first edit/module/motion/envelope/segment')
+        liblo.send(dest, "/cyperus/edit/module/motion/envelope/segment",
                    "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
                    -1,  # release_node
                    -1, # loop_node
@@ -283,21 +283,21 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                    1.0)# time_scale
         response = responses.get()
 
-        # time.sleep(0.5)
+        time.sleep(0.25)
 
-        # print('sending first edit/module/movement/envelope/segment')
-        # liblo.send(dest, "/cyperus/edit/module/movement/envelope/segment",
-        #            "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
-        #            -1,  # release_node
-        #            -1, # loop_node
-        #            0,  # offset
-        #            -1.0,# gate
-        #            1.0,# level_scale
-        #            0.0,# level_bias
-        #            1.0)# time_scale
-        # response = responses.get()
+        print('sending first edit/module/motion/envelope/segment')
+        liblo.send(dest, "/cyperus/edit/module/motion/envelope/segment",
+                   "/{}?{}".format(bus_main0_uuid, envelope_segment_perc_module_uuid),
+                   -1,  # release_node
+                   -1, # loop_node
+                   0,  # offset
+                   -1.0,# gate
+                   1.0,# level_scale
+                   0.0,# level_bias
+                   1.0)# time_scale
+        response = responses.get()
 
-        time.sleep(1.5);
+        time.sleep(1.0);
 
         
 if __name__ == '__main__':
