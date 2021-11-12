@@ -12,70 +12,70 @@ class OscServer(ServerThread):
     def __init__(self):
         ServerThread.__init__(self, 5000)
         
-    @make_method('/cyperus/address', 'ss')
+    @make_method('/cyperus/address', 'sis')
     def osc_address_handler(self, path, args):
         s = args
         responses.put(s)
         print("received '/cyperus/address'")
 
-    @make_method('/cyperus/list/main', 'ss')
+    @make_method('/cyperus/list/main', 'sis')
     def osc_list_main_handler(self, path, args):
         s = args
         responses.put(s)
         print("received '/cyperus/list/main'")
 
-    @make_method('/cyperus/add/bus', 'ssssssi')
+    @make_method('/cyperus/add/bus', 'sisssssi')
     def osc_add_bus(self, path, args):
         print("received '/cyperus/add/bus'")
 
-    @make_method('/cyperus/list/bus', 'ssiis')
+    @make_method('/cyperus/list/bus', 'sisiis')
     def osc_list_bus(self, path, args):
         print("received '/cyperus/list/bus'")
         responses.put(args)
 
-    @make_method('/cyperus/list/bus_port', 'sss')
+    @make_method('/cyperus/list/bus_port', 'siss')
     def osc_list_bus_port(self, path, args):
         print("received '/cyperus/list/bus_port'")
         responses.put(args)
 
-    @make_method('/cyperus/add/connection', 'sssi')
+    @make_method('/cyperus/add/connection', 'sissi')
     def osc_add_connection(self, path, args):
         print("received '/cyperus/add/connection'")
         print('path', path)
         print('args', args)
         responses.put(args)
         
-    @make_method('/cyperus/add/module/audio/oscillator/pulse', 'ssffff')
+    @make_method('/cyperus/add/module/audio/oscillator/pulse', 'sisffff')
     def osc_add_module_sine(self, path, args):
         print("received '/cyperus/add/module/audio/oscillator/pulse'")
         responses.put(args)
 
-    @make_method('/cyperus/edit/module/audio/oscillator/pulse', 'ssffff')
+    @make_method('/cyperus/edit/module/audio/oscillator/pulse', 'sisffff')
     def osc_edit_module_sine(self, path, args):
         print("received '/cyperus/edit/module/audio/oscillator/pulse'")
         responses.put(args)
 
-    @make_method('/cyperus/add/module/motion/envelope/stdshape', 'ssiffff')
+    @make_method('/cyperus/add/module/motion/envelope/stdshape', 'sisiffff')
     def osc_add_module_envelope_stdshape_perc(self, path, args):
         print("received '/cyperus/add/module/motion/envelope/stdshape'")
         responses.put(args)
 
-    @make_method('/cyperus/edit/module/motion/envelope/segment', 'ssiiiffff')
+    @make_method('/cyperus/edit/module/motion/envelope/segment', 'sisiiiffff')
     def osc_edit_module_envelope_stdshape_perc(self, path, args):
         print("received '/cyperus/edit/module/motion/envelope/segment'")
         responses.put(args)
 
-    @make_method('/cyperus/add/module/audio/filter/moogff', 'ssfffff')
+    @make_method('/cyperus/add/module/audio/filter/moogff', 'sisfffff')
     def osc_add_module_moogff(self, path, args):
         print("received '/cyperus/add/module/audio/filter/moogff'")
         responses.put(args)
 
-    @make_method('/cyperus/edit/module/audio/filter/moogff', 'ssfffff')
+    @make_method('/cyperus/edit/module/audio/filter/moogff', 'sisfffff')
     def osc_edit_module_moogff(self, path, args):
         print("received '/cyperus/edit/module/audio/filter/moogff'")
         responses.put(args)
         
-    @make_method('/cyperus/list/module_port', 'sss')
+    @make_method('/cyperus/list/module_port', 'siss')
     def osc_list_module_port(self, path, args):
         print("received '/cyperus/list/module_port'")
         responses.put(args)
@@ -104,7 +104,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     liblo.send(dest, "/cyperus/list/main", str(uuid.uuid4()))
     response = responses.get()
     print('response', response)
-    raw_mains = response[1].split('\n')
+    raw_mains = response[2].split('\n')
     outs = False
     for elem in filter(None, raw_mains):
         if elem in 'out:':
@@ -120,7 +120,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     liblo.send(dest, "/cyperus/list/bus", str(uuid.uuid4()), "/", 1)
     response = responses.get()
     print('response list bus', response)
-    bus_main0_uuid = response[4].split('|')[0]
+    bus_main0_uuid = response[5].split('|')[0]
 
     print('bus_main0_uuid', bus_main0_uuid)
     
@@ -130,7 +130,7 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                "/{}".format(bus_main0_uuid))
     response = responses.get()
 
-    raw_bus_ports = response[2].split('\n')
+    raw_bus_ports = response[3].split('\n')
     print(raw_bus_ports)
     outs = False
     for elem in filter(None, raw_bus_ports):
@@ -150,13 +150,13 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
     
     liblo.send(dest, "/cyperus/add/module/audio/oscillator/pulse", str(uuid.uuid4), "/{}".format(bus_main0_uuid), 440.0, 0.5, 1.0, 0.0)
     response = responses.get()
-    sine_module_uuid = response[1]    
+    sine_module_uuid = response[2]    
     
     liblo.send(dest, "/cyperus/list/module_port", str(uuid.uuid4()), "/{}?{}".format(bus_main0_uuid,
                                                                                      sine_module_uuid))
     response = responses.get()
     print('bloc_processor response: {}'.format(response))
-    raw_sine_module_ports = response[2].split('\n')
+    raw_sine_module_ports = response[3].split('\n')
     print(raw_sine_module_ports)
     outs = False
     for elem in filter(None, raw_sine_module_ports):
@@ -179,13 +179,13 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                0.5,   # level
                -4.0)  # curve
     response = responses.get()
-    envelope_segment_perc_module_uuid = response[1]    
+    envelope_segment_perc_module_uuid = response[2]    
     
     liblo.send(dest, "/cyperus/list/module_port", str(uuid.uuid4()), "/{}?{}".format(bus_main0_uuid,
                                                                                      envelope_segment_perc_module_uuid))
     response = responses.get()
     print('bloc_processor response: {}'.format(response))
-    raw_envelope_segment_perc_module_ports = response[2].split('\n')
+    raw_envelope_segment_perc_module_ports = response[3].split('\n')
     print(raw_envelope_segment_perc_module_ports)
     outs = False
     for elem in filter(None, raw_envelope_segment_perc_module_ports):
@@ -208,14 +208,14 @@ def test_single_channel_single_bus_sine_follower_sine(dest):
                1.0,
                0.0) # add
     response = responses.get()
-    filter_module_uuid = response[1]    
+    filter_module_uuid = response[2]    
     
     liblo.send(dest, "/cyperus/list/module_port", str(uuid.uuid4()), "/{}?{}".format(bus_main0_uuid,
                                                                                      filter_module_uuid))
 
     response = responses.get()
     print('bloc_processor response: {}'.format(response))
-    raw_filter_module_ports = response[2].split('\n')
+    raw_filter_module_ports = response[3].split('\n')
     print(raw_filter_module_ports)
     outs = False
     for elem in filter(None, raw_filter_module_ports):
